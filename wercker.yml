@@ -1,0 +1,73 @@
+box: golang
+
+dev:
+  steps:
+    - setup-go-workspace:
+        package-dir: github.com/PrzemyslawMorski/backing-fulfillment
+
+    - script:
+        name: go get
+        code: |
+          cd $WERCKER_SOURCE_DIR
+          go version
+          go get -u github.com/Masterminds/glide
+          export PATH=$WERCKER_SOURCE_DIR/bin:$PATH
+          glide install
+
+    - internal/watch:
+        code: go run main.go
+        reload: true
+
+build:
+  steps:
+    - setup-go-workspace:
+        package-dir: github.com/PrzemyslawMorski/backing-fulfillment
+
+    - script:
+        name: go get
+        code: |
+          cd $WERCKER_SOURCE_DIR
+          go version
+          go get -u github.com/Masterminds/glide
+          export PATH=$WERCKER_SOURCE_DIR/bin:$PATH
+          glide install
+
+    # Build the project
+    - script:
+        name: go build
+        code: |
+          go build
+
+    # Test the project
+    - script:
+        name: go test
+        code: |
+          go test -v $(glide novendor)
+
+    - script:
+        name: copy files to wercker output
+        code: |
+          cp -R ./ ${WERCKER_OUTPUT_DIR}
+
+
+deploy:
+ steps:
+   - internal/docker-push:
+       username: $DOCKER_USERNAME
+       password: $DOCKER_PASSWORD
+       cmd: /pipeline/source/backing-fulfillment
+       port: "8080"
+       tag: latest
+       repository: pmorski/backing-fulfillment
+       registry: https://registry.hub.docker.com
+
+cloud-deploy:
+  steps:
+   - cng/cf-deploy:
+       api: $CLOUD_FOUNDRY_API
+       user: $CLOUD_FOUNDRY_USER
+       password: $CLOUD_FOUNDRY_PASSWORD
+       org: $CLOUD_FOUNDRY_ORG
+       space: $CLOUD_FOUNDRY_SPACE
+       appname: backing-fulfillment
+       docker_image: pmorski/backing-fulfillment

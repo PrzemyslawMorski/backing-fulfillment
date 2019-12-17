@@ -1,0 +1,6 @@
+applications:
+- path: .
+  memory: 256MB
+  instances: 1
+  name: backing-fulfillment
+  disk_quota: 512M
